@@ -12,11 +12,11 @@ from data.data import Dataset
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 #citeulike-a
-tf.app.flags.DEFINE_string('rating_matrix_path', '/home/cc/data/ctrsr_datasets/citeulike-a/users.dat', 'rating matrix data path')
-tf.app.flags.DEFINE_string('text_path', '/home/cc/data/ctrsr_datasets/citeulike-a/raw-data.csv', 'text data path')
-tf.app.flags.DEFINE_string('word2vec_model_path', '../data/citeulike-a_word2vec_model_32', 'word2vec model data path')
-tf.app.flags.DEFINE_string('tag_item_path', '/home/cc/data/ctrsr_datasets/citeulike-a/pre_tag_item.dat', 'tag item path')
-tf.app.flags.DEFINE_string('data_set', 'citeulike-a', 'data set')
+# tf.app.flags.DEFINE_string('rating_matrix_path', '/home/cc/data/ctrsr_datasets/citeulike-a/users.dat', 'rating matrix data path')
+# tf.app.flags.DEFINE_string('text_path', '/home/cc/data/ctrsr_datasets/citeulike-a/raw-data.csv', 'text data path')
+# tf.app.flags.DEFINE_string('word2vec_model_path', '../data/citeulike-a_word2vec_model_32', 'word2vec model data path')
+# tf.app.flags.DEFINE_string('tag_item_path', '/home/cc/data/ctrsr_datasets/citeulike-a/pre_tag_item.dat', 'tag item path')
+# tf.app.flags.DEFINE_string('data_set', 'citeulike-a', 'data set')
 
 #citeulike-t
 # tf.app.flags.DEFINE_string('rating_matrix_path', '/home/chenchen/data/ctrsr_datasets/citeulike-t/users.dat', 'rating matrix data path')
@@ -26,30 +26,30 @@ tf.app.flags.DEFINE_string('data_set', 'citeulike-a', 'data set')
 # tf.app.flags.DEFINE_string('data_set', 'citeulike-t', 'data set')
 
 #movielens-1m
-# tf.app.flags.DEFINE_string('rating_matrix_path', '/home/chenchen/data/ctrsr_datasets/movielens_plot_data/movielens_1m/pre_ratings.dat', 'rating matrix data path')
-# tf.app.flags.DEFINE_string('text_path', '/home/chenchen/data/ctrsr_datasets/movielens_plot_data/movielens_1m/movies.plot', 'text data path')
-# tf.app.flags.DEFINE_string('word2vec_model_path', '../data/movielens-1m_word2vec_model_32', 'word2vec model data path')
-# tf.app.flags.DEFINE_string('tag_item_path', '/home/chenchen/data/ctrsr_datasets/movielens_plot_data/movielens_1m/pre_movies_tag.dat', 'tag item path')
-# tf.app.flags.DEFINE_string('data_set', 'movielens-1m', 'data set')
+tf.app.flags.DEFINE_string('rating_matrix_path', '/home/cc/data/ctrsr_datasets/movielens_plot_data/movielens_1m/pre_ratings.dat', 'rating matrix data path')
+tf.app.flags.DEFINE_string('text_path', '/home/cc/data/ctrsr_datasets/movielens_plot_data/movielens_1m/movies.plot', 'text data path')
+tf.app.flags.DEFINE_string('word2vec_model_path', '../data/movielens-1m_word2vec_model_32', 'word2vec model data path')
+tf.app.flags.DEFINE_string('tag_item_path', '/home/cc/data/ctrsr_datasets/movielens_plot_data/movielens_1m/pre_movies_tag.dat', 'tag item path')
+tf.app.flags.DEFINE_string('data_set', 'movielens-1m', 'data set')
 
 #movielens-10m
-# tf.app.flags.DEFINE_string('rating_matrix_path', '/home/chenchen/data/ctrsr_datasets/movielens_plot_data/movielens_10m/pre_ratings_10m.dat', 'rating matrix data path')
-# tf.app.flags.DEFINE_string('text_path', '/home/chenchen/data/ctrsr_datasets/movielens_plot_data/movielens_10m/10mmovies.plot', 'text data path')
+# tf.app.flags.DEFINE_string('rating_matrix_path', '/home/cc/data/ctrsr_datasets/movielens_plot_data/movielens_10m/pre_ratings_10m.dat', 'rating matrix data path')
+# tf.app.flags.DEFINE_string('text_path', '/home/cc/data/ctrsr_datasets/movielens_plot_data/movielens_10m/10mmovies.plot', 'text data path')
 # tf.app.flags.DEFINE_string('word2vec_model_path', '../data/movielens-10m_word2vec_model_32', 'word2vec model data path')
-# tf.app.flags.DEFINE_string('tag_item_path', '/home/chenchen/data/ctrsr_datasets/movielens_plot_data/movielens_10m/pre_movies_tag_10m.dat', 'tag item path')
+# tf.app.flags.DEFINE_string('tag_item_path', '/home/cc/data/ctrsr_datasets/movielens_plot_data/movielens_10m/pre_movies_tag_10m.dat', 'tag item path')
 # tf.app.flags.DEFINE_string('data_set', 'movielens-10m', 'data set')
 
 tf.app.flags.DEFINE_string('log_path', '../ckpt/deepMF_with_text_log/', 'model save path')
 tf.app.flags.DEFINE_integer('epochs', 400, 'number of epochs')
-tf.app.flags.DEFINE_integer('latent_dim', 256, 'embedding size')
+tf.app.flags.DEFINE_integer('latent_dim', 64, 'embedding size')
 tf.app.flags.DEFINE_integer('text_latent_dim', 32, 'text embedding size')
-tf.app.flags.DEFINE_integer('batch_size', 256, 'batch size')
-tf.app.flags.DEFINE_integer('num_neg', 8, 'number of negative instances to pair with a positive instance')
-tf.app.flags.DEFINE_float('learning_rate', 0.001, 'learning rate')
-tf.app.flags.DEFINE_string('optimizer', 'adam', 'specify an optimizer: adagrad, adam, rmsprop, sgd')
+tf.app.flags.DEFINE_integer('batch_size', 64, 'batch size')
+tf.app.flags.DEFINE_integer('num_neg', 1, 'number of negative instances to pair with a positive instance')
+tf.app.flags.DEFINE_float('learning_rate', 5, 'learning rate')
+tf.app.flags.DEFINE_string('optimizer', 'sgd', 'specify an optimizer: adagrad, adam, rmsprop, sgd')
 tf.app.flags.DEFINE_integer('verbose', 1000, 'show performance per X iterations')
 tf.app.flags.DEFINE_integer('test_itr',5000,'test performance per X iterations')
-tf.app.flags.DEFINE_integer('save',5000,'save every X iterations')
+tf.app.flags.DEFINE_integer('save',10000,'save every X iterations')
 tf.app.flags.DEFINE_string('train_dir', '../ckpt/deepMF_with_text/', 'model save path')
 FLAGS = tf.app.flags.FLAGS
 
@@ -119,6 +119,7 @@ def evaluate(model,sess,dataset):
         users[:]=user_id
         temp=np.zeros(BPR_test_items.shape)
         temp_expand=np.expand_dims(temp,axis=1)
+
         pos_scores,_=model.step(sess,users,BPR_test_items,temp,temp_expand,False)
         #auc=sklearn.metrics.roc_auc_score(y_true=labels,y_score=pos_scores)
         #pos_scores=pos_scores.reshape([-1])

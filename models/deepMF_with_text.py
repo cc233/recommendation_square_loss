@@ -39,9 +39,9 @@ class deepMF_with_text(object):
             self.global_step = tf.Variable(0, trainable=False, dtype=tf.int32, name='global_step')
 
             self.build_graph()
-            #variables = tf.global_variables()
-            #for i in xrange(len(variables)):
-            #    print variables[i]
+            variables = tf.global_variables()
+            for i in xrange(len(variables)):
+                print variables[i]
             self.saver = tf.train.Saver(max_to_keep=10)
 
 
@@ -49,11 +49,12 @@ class deepMF_with_text(object):
         self._create_placeholder()
         self._create_embedding()
         self._create_struct()
-        self._create_loss()
+        #self._create_loss()
         #self._create_nn_loss()
         #self._create_multi_class_loss()
         #self._create_BPR_loss()
         #self._create_square_loss()
+        self._create_transformed_square_loss()
         self._create_optimizer()
         #for ele in tf.trainable_variables():  
         #    print ele.name  
@@ -77,6 +78,9 @@ class deepMF_with_text(object):
         self.doc_vec_W=tf.Variable(tf.random_normal([3, self.text_latent_dim], stddev=0.01), dtype=tf.float32,trainable=True, name='doc2vec_W')
         self.doc_vec_b=tf.Variable(tf.random_normal([self.text_latent_dim], stddev=0.01), dtype=tf.float32,trainable=True, name='doc2vec_b')
         self.doc_vec_dim_increase=tf.Variable(tf.random_normal([self.text_latent_dim,self.latent_dim], stddev=0.01), dtype=tf.float32,trainable=True, name='increase_dimension')
+        self.au=tf.Variable(0,dtype=self.dtype,trainable=False,name='a_u')
+        self.bu=tf.Variable(0,dtype=self.dtype,trainable=False,name='b_u')
+        self.cu=tf.Variable(0,dtype=self.dtype,trainable=False,name='c_u')
         #self.doc_vec_attention=tf.Variable(tf.random_normal([20], stddev=0.01), dtype=tf.float32,trainable=True, name='doc2vec_attention')
 
         #lambda
@@ -264,7 +268,7 @@ class deepMF_with_text(object):
         word_prediction_loss=pos_word_prediction_loss/(self.num_neg+1)+neg_word_prediction_loss/(self.num_neg+1)*self.num_neg
         self.test_shape.append(self.loss)
         self.test_shape.append(word_prediction_loss)
-        self.loss+=0.2*word_prediction_loss
+        #self.loss+=0.2*word_prediction_loss
         #self.test_shape.append(self.loss)
     def _create_BPR_loss(self):
         scores=tf.reduce_sum(self.item_vec*self.user_embed,axis=2)
@@ -344,30 +348,44 @@ class deepMF_with_text(object):
         #hinge loss
         #losses=tf.nn.relu(1-(self.pos_scores-self.largest_neg_scores))
         #self.loss=tf.reduce_mean(losses)
+    def _create_transformed_square_loss(self):
+        self.pos_scores=tf.reduce_sum(self.user_embed*self.pos_items_embed,axis=1)
+        #self.pos_scores:[batch_size]
+        self.neg_scores=tf.reduce_sum(tf.expand_dims(self.user_embed,axis=1)*self.neg_items_embed,axis=2)
+        #self.neg_scores:[batch_size,num_neg]
+
+        pos_scores=tf.expand_dims(self.pos_scores,axis=1)*tf.ones(tf.shape(self.neg_scores))
+        #self.pos_scores:[batch_size,num_neg]
+        diff=tf.reduce_mean(pos_scores-self.neg_scores)
+        self.cu=diff
+        self.au=tf.reduce_mean(pos_scores)
+        self.bu=tf.reduce_mean(self.neg_scores)
+        self.loss=-2*tf.reduce_mean(diff)+2*self.cu*diff-self.cu*self.cu+tf.reduce_mean((pos_scores-self.au)*(pos_scores-self.au))+tf.reduce_mean((self.neg_scores-self.bu)*(self.neg_scores-self.bu))
+
     def _create_square_loss(self):
-        pos_doc_index=tf.nn.embedding_lookup(self.doc_index,self.pos_items,name='pos_doc_index')
-        pos_doc_mask=tf.nn.embedding_lookup(self.doc_mask,self.pos_items,name='pos_doc_mask')
-        neg_doc_index=tf.nn.embedding_lookup(self.doc_index,self.neg_items,name='neg_doc_index')
-        neg_doc_mask=tf.nn.embedding_lookup(self.doc_mask,self.neg_items,name='neg_doc_mask')
-        pos_doc_vec,self.test_shape=doc2vec.calc_doc_vec(pos_doc_index,pos_doc_mask,self.word_vec,self.doc_vec_dim_increase,self.test_shape)
-        neg_doc_vec,_=doc2vec.calc_doc_vec(neg_doc_index,neg_doc_mask,self.word_vec,self.doc_vec_dim_increase,self.test_shape)
+        self.pos_scores=tf.reduce_sum(self.user_embed*self.pos_items_embed,axis=1)
+        #self.pos_scores:[batch_size]
+        self.neg_scores=tf.reduce_sum(tf.expand_dims(self.user_embed,axis=1)*self.neg_items_embed,axis=2)
+        #self.neg_scores:[batch_size,num_neg]
 
-        user_embed = tf.nn.embedding_lookup(self.user_embeddings, self.user_inputs, name='users_embed')
-        pos_items_embed = tf.nn.embedding_lookup(self.item_embeddings, self.pos_items, name='pos_items_embed')
-        neg_items_embed=tf.nn.embedding_lookup(self.item_embeddings,self.neg_items,name='neg_items_embed')
+        pos_scores=tf.expand_dims(self.pos_scores,axis=1)*tf.ones(tf.shape(self.neg_scores))
+        #self.pos_scores:[batch_size,num_neg]
 
-        #pos_items_embed+=pos_doc_vec
-        #neg_items_embed+=neg_doc_vec
-        self.pos_scores=tf.reduce_sum(user_embed*pos_items_embed,axis=1)
-        self.neg_scores=tf.reduce_sum(user_embed*neg_items_embed,axis=1)
-        pos_labels=tf.ones(tf.shape(self.pos_scores),tf.float32)
-        neg_labels=tf.zeros(tf.shape(self.neg_scores),tf.float32)
-        #self.pos_scores=self.pos_scores1+self.pos_scores
-        #self.neg_scores=self.neg_scores1+self.neg_scores
-        pos_loss=tf.losses.mean_squared_error(labels=pos_labels,predictions=self.pos_scores)
-        neg_loss=tf.losses.mean_squared_error(labels=neg_labels,predictions=self.neg_scores)
-        self.loss= (pos_loss+neg_loss)/2
-        
+        diff=tf.reshape(pos_scores-self.neg_scores,[-1])
+        labels=tf.ones(tf.shape(diff),dtype=tf.float32)
+        losses= tf.losses.mean_squared_error(labels=labels,predictions=diff)
+        self.loss=tf.reduce_mean(losses)
+
+        #hinge loss
+        #losses=tf.nn.relu(1-(self.pos_scores-self.largest_neg_scores))
+        #self.loss=tf.reduce_mean(losses)
+
+        #word_prediction_loss
+        pos_word_prediction_loss=tf.reduce_mean(self.pos_word_prediction_loss)
+        neg_word_prediction_loss=tf.reduce_mean(self.neg_word_prediction_loss)
+        word_prediction_loss=pos_word_prediction_loss/(self.num_neg+1)+neg_word_prediction_loss/(self.num_neg+1)*self.num_neg
+        #self.loss+=0.2*word_prediction_loss
+        self.test_shape.append(tf.reduce_mean(self.user_embeddings))
 
     def _create_optimizer(self):
         #params = tf.trainable_variables()
@@ -380,23 +398,18 @@ class deepMF_with_text(object):
             optimizer = tf.train.RMSPropOptimizer(self.learning_rate)
         else:
             optimizer = tf.train.GradientDescentOptimizer(self.learning_rate)
+        self.updates = optimizer.minimize(self.loss, self.global_step)
+        #min max
+        # gradients=optimizer.compute_gradients(self.loss)
+        # #gradients=gradients
+        # print gradients
+        # self.grads,variables=zip(*gradients)
+        # self.grads=list(self.grads)
+        # self.grads1=[-1*grad for grad in self.grads[12:]]
+        # self.grads=self.grads[0:12]+self.grads1
+        # self.gradients=zip(self.grads,variables)
+        # self.updates=optimizer.apply_gradients(self.gradients,self.global_step)
 
-        #self.updates = optimizer2.minimize(self.loss, self.global_step)
-        gradients=optimizer.compute_gradients(self.loss)
-        #gradients=gradients
-        print gradients
-        self.grads,variables=zip(*gradients)
-        self.grads=list(self.grads)
-        self.grads1=[-1*grad for grad in self.grads[12:]]
-        self.grads=self.grads[0:12]+self.grads1
-        self.gradients=zip(self.grads,variables)
-        self.updates=optimizer.apply_gradients(self.gradients,self.global_step)
-        # gradients = tf.gradients(self.loss, params)
-        # clipped_gradients, norm = tf.clip_by_global_norm(gradients, self.max_gradient_norm)
-        # self.updates = optimizer.apply_gradients(
-        #     zip(clipped_gradients, params),
-        #     global_step=self.global_step
-        # )
 
     def step(self,session,users,pos_items,neg_item_set,neg_item_index,training):
         input_feed={}
