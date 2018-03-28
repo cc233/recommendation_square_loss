@@ -1,1 +1,1 @@
-a recommendation project
+a recommendation project with square loss
